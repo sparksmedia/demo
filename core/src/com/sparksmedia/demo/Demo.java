@@ -7,16 +7,24 @@ import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.Sprite;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapRenderer;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
+import com.badlogic.gdx.math.Vector3;
 
 public class Demo extends ApplicationAdapter implements InputProcessor {
+	
 	Texture img;
 	TiledMap tiledMap;
 	OrthographicCamera camera;
 	TiledMapRenderer tiledMapRenderer;
+	
+	SpriteBatch batch;
+	Texture texture;
+	Sprite sprite;
     
 	@Override
 	public void create () {
@@ -30,6 +38,10 @@ public class Demo extends ApplicationAdapter implements InputProcessor {
 		tiledMap = new TmxMapLoader().load("map.tmx");
 		tiledMapRenderer = new OrthogonalTiledMapRenderer(tiledMap);
 		
+		batch = new SpriteBatch();
+		texture = new Texture(Gdx.files.internal("char.png"));
+		sprite = new Sprite(texture);
+		
 		Gdx.input.setInputProcessor(this);
 	}
 
@@ -40,11 +52,16 @@ public class Demo extends ApplicationAdapter implements InputProcessor {
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 		
 		camera.update();
-		
+			
 		tiledMapRenderer.setView(camera);
 		tiledMapRenderer.render();
+		
+		batch.setProjectionMatrix(camera.combined);
+		batch.begin();
+		sprite.draw(batch);
+		batch.end();
 	}
-	
+		
 	@Override
 	public boolean keyDown(int keycode) {
 		return false;
@@ -80,7 +97,10 @@ public class Demo extends ApplicationAdapter implements InputProcessor {
 
 	@Override
 	public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-		return false;
+		Vector3 clickCoordinates = new Vector3(screenX, screenY, 0);
+		Vector3 position = camera.unproject(clickCoordinates);
+		sprite.setPosition(position.x, position.y);
+		return true;
 	}
 
 	@Override
