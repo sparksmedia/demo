@@ -19,7 +19,7 @@ public class GameScreen extends ScreenAdapter {
 	private OrthographicCamera camera;
 	
 	private TiledMap tiledMap;
-	private OrthogonalTiledMapRenderer orthogonalTiledMapRenderer;	
+	private OrthogonalTiledMapRenderer orthogonalTiledMapRenderer;
 	
 	private static final int WORLD_WIDTH = 800;
 	private static final int WORLD_HEIGHT = 480;
@@ -43,14 +43,15 @@ public class GameScreen extends ScreenAdapter {
 		camera.position.set(WORLD_WIDTH / 2 - WORLD_WIDTH, WORLD_HEIGHT / 2, 0);
 		camera.update();
 		
-		tiledMap = new TmxMapLoader().load("map.tmx");		
+		tiledMap = new TmxMapLoader().load("map.tmx");
 		orthogonalTiledMapRenderer = new OrthogonalTiledMapRenderer(tiledMap);
+		
 		MapProperties prop = tiledMap.getProperties();
 		mapWidth = BLOCK * prop.get("width", Integer.class);
-		mapHeight = BLOCK * prop.get("width", Integer.class);
+		mapHeight = BLOCK * prop.get("height", Integer.class);
 		
-		hero = new Hero();		
-		hero.worldMap(mapWidth, mapHeight);		
+		hero = new Hero();
+		hero.worldMap(mapWidth, mapHeight, tiledMap);		
 	}
 
 	@Override
@@ -60,15 +61,20 @@ public class GameScreen extends ScreenAdapter {
 		
 		cameraMovement();
 		
+		int[] backgroundLayers = { 0 };
+		int[] foregroundLayers = { 1 };
+		
 		orthogonalTiledMapRenderer.setView(camera);
-		orthogonalTiledMapRenderer.render();
+		orthogonalTiledMapRenderer.render(backgroundLayers);
 		
 		render.setProjectionMatrix(camera.projection);
 		render.setTransformMatrix(camera.view);
-		
+				
 		render.begin(ShapeRenderer.ShapeType.Filled);
 		hero.render(render);
 		render.end();
+		
+		orthogonalTiledMapRenderer.render(foregroundLayers);
 	}
 	
 	public void cameraMovement() {
@@ -77,7 +83,7 @@ public class GameScreen extends ScreenAdapter {
 		int heroY = hero.getY();
 				
 		if(Gdx.input.isKeyPressed(Keys.UP)) {
-			if(heroY > cameraY && cameraY < (WORLD_HEIGHT / 2) + WORLD_HEIGHT + (BLOCK * 2) - 1) {
+			if(heroY > cameraY && cameraY < mapHeight - (WORLD_HEIGHT / 2) - 1) {
 				cameraY+= SPEED;
 			}
 		}
@@ -89,7 +95,7 @@ public class GameScreen extends ScreenAdapter {
 		}
 				
 		if(Gdx.input.isKeyPressed(Keys.RIGHT)) {
-			if(heroX > cameraX && cameraX < 622) {
+			if(heroX > cameraX && cameraX < mapWidth - (WORLD_WIDTH / 2) - 2) {
 				cameraX+= SPEED;
 			}
 		}

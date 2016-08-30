@@ -1,16 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="right-down" width="32" height="32" tilewidth="32" tileheight="32" nextobjectid="1">
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="32" height="32" tilewidth="32" tileheight="32" nextobjectid="34">
  <tileset firstgid="1" name="tileset" tilewidth="32" tileheight="32" tilecount="256" columns="16">
   <image source="image.png" width="512" height="512"/>
  </tileset>
- <layer name="bg" width="32" height="32">
+ <layer name="ground" width="32" height="32">
   <data encoding="base64" compression="zlib">
    eJzt1LENACAIBVE2ZF3ZQLaSEX4hMZErXke40OBm5oJVQpztQH92f5ccfD99+vTp394boq5+il7/fwAAfnIA4OtUDg==
   </data>
  </layer>
- <layer name="elements" width="32" height="32">
+ <layer name="enviroment" width="32" height="32">
   <data encoding="base64" compression="zlib">
    eJztlMkJAkEQRU3FLQC3ANwCcAvALbdJRI3ALQC3ANwOgq8PDSLN8BucUbAfvMM0RRW/oCbKpEcJy5jHAtZSnG3IYg4rWMXiB3rOcI4Lodbmt/Nd+X36GZa4wrVQa/Pb/bvy+/Qz7HCPB6FWye/Tz3DGC16FWiW/Tz9flPyf4uF4U/InOT/N/C7q2MAmtrAdU+t7hwod7GIP+ziIqVXvcINbcf4QRzjGCU5jatU7POJJnO+Deoc3vL98++wjCZLah8r7Pn4F1/8gEAgEAoF/Jfry7CeRzzui
   </data>
  </layer>
+ <objectgroup name="objects">
+  <object id="13" x="832" y="512" width="32" height="32"/>
+  <object id="16" x="704" y="224" width="32" height="64"/>
+  <object id="28" x="542.667" y="124" width="36" height="68"/>
+  <object id="29" x="529.333" y="408" width="30.6667" height="38.6667"/>
+  <object id="30" x="657.333" y="474.667" width="29.3333" height="38.6667"/>
+  <object id="31" x="220" y="382.667" width="34.6667" height="66.6666"/>
+  <object id="32" x="160" y="157.333" width="32" height="66.6667"/>
+  <object id="33" x="869.333" y="0" width="162.667" height="384"/>
+ </objectgroup>
 </map>
