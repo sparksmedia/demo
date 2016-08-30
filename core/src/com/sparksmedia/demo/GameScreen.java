@@ -5,7 +5,6 @@ import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.maps.MapProperties;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
@@ -14,8 +13,6 @@ import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 public class GameScreen extends ScreenAdapter {
 	
 	private Hero hero;
-	
-	private ShapeRenderer render;
 	private OrthographicCamera camera;
 	
 	private TiledMap tiledMap;
@@ -35,9 +32,7 @@ public class GameScreen extends ScreenAdapter {
 	}
 	
 	@Override
-	public void show() {
-		render = new ShapeRenderer();
-		
+	public void show() {		
 		camera = new OrthographicCamera();
 		camera.setToOrtho(false, WORLD_WIDTH, WORLD_HEIGHT);
 		camera.position.set(WORLD_WIDTH / 2 - WORLD_WIDTH, WORLD_HEIGHT / 2, 0);
@@ -61,19 +56,19 @@ public class GameScreen extends ScreenAdapter {
 		
 		cameraMovement();
 		
-		int[] backgroundLayers = { 0 };
-		int[] foregroundLayers = { 1 };
+		int[] backgroundLayers = { 0, 1 };
+		int[] foregroundLayers = { 2 };
 		
 		orthogonalTiledMapRenderer.setView(camera);
 		orthogonalTiledMapRenderer.render(backgroundLayers);
 		
-		render.setProjectionMatrix(camera.projection);
-		render.setTransformMatrix(camera.view);
-				
-		render.begin(ShapeRenderer.ShapeType.Filled);
-		hero.render(render);
-		render.end();
+		hero.shapeRenderer.setProjectionMatrix(camera.projection);
+		hero.shapeRenderer.setTransformMatrix(camera.view);	
 		
+		hero.batch.setProjectionMatrix(camera.projection);
+		hero.batch.setTransformMatrix(camera.view);
+		
+		hero.render();		
 		orthogonalTiledMapRenderer.render(foregroundLayers);
 	}
 	
