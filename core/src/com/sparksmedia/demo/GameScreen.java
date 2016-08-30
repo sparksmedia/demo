@@ -13,6 +13,7 @@ import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 public class GameScreen extends ScreenAdapter {
 	
 	private Hero hero;
+	private Enemy enemy;
 	private OrthographicCamera camera;
 	
 	private TiledMap tiledMap;
@@ -46,7 +47,9 @@ public class GameScreen extends ScreenAdapter {
 		mapHeight = BLOCK * prop.get("height", Integer.class);
 		
 		hero = new Hero();
-		hero.worldMap(mapWidth, mapHeight, tiledMap);		
+		hero.worldMap(mapWidth, mapHeight, tiledMap);
+		
+		enemy = new Enemy();
 	}
 
 	@Override
@@ -62,13 +65,21 @@ public class GameScreen extends ScreenAdapter {
 		orthogonalTiledMapRenderer.setView(camera);
 		orthogonalTiledMapRenderer.render(backgroundLayers);
 		
-		hero.shapeRenderer.setProjectionMatrix(camera.projection);
-		hero.shapeRenderer.setTransformMatrix(camera.view);	
+		enemy.shapeRenderer.setProjectionMatrix(camera.projection);
+		enemy.shapeRenderer.setTransformMatrix(camera.view);
+		enemy.batch.setProjectionMatrix(camera.projection);
+		enemy.batch.setTransformMatrix(camera.view);
 		
+		enemy.render();
+		
+		hero.shapeRenderer.setProjectionMatrix(camera.projection);
+		hero.shapeRenderer.setTransformMatrix(camera.view);
+				
 		hero.batch.setProjectionMatrix(camera.projection);
 		hero.batch.setTransformMatrix(camera.view);
 		
-		hero.render();		
+		hero.render();	
+		
 		orthogonalTiledMapRenderer.render(foregroundLayers);
 	}
 	

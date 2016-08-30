@@ -51,9 +51,10 @@ public class Hero {
 	private Animation rightAnimation;
 	private Animation leftAnimation;
 	
-	public SpriteBatch batch;
+	public SpriteBatch batch;	
+	private float stateTime;
 	
-	private float stateTime;	
+	private Enemy enemy;
 	
 	public Hero() {
 		hero = new Rectangle(heroX, heroY, collisionWidth, collisionHeight);
@@ -72,6 +73,8 @@ public class Hero {
         
 		batch = new SpriteBatch();
 		stateTime = 0f;
+		
+		enemy = new Enemy();
 	}
 		
 	public void worldMap(int mapWidth, int mapHeight, TiledMap tiledMap) {		
@@ -191,6 +194,12 @@ public class Hero {
 			if(Intersector.overlaps(heroMove, collisionRect.get(i))) {
 				collision = true;
 			}
+		}
+		
+		Rectangle enemyRect = enemy.getRectangle();
+		
+		if(Intersector.overlaps(heroMove, enemyRect)) {
+			collision = true;
 		}
 		
 		return collision;
