@@ -27,7 +27,7 @@ public class Hero {
 	public ShapeRenderer shapeRenderer;
 	private Rectangle hero;
 	private Rectangle heroMove;
-	String direction;
+	private int direction;
 	
 	private int heroX = Gdx.graphics.getWidth() / 2;
 	private int heroY = Gdx.graphics.getHeight() / 2;
@@ -86,7 +86,7 @@ public class Hero {
 	}
 	
 	public void render() {
-		String heroDirection = heroMovement();
+		int heroDirection = heroMovement();
 		
 		//DEBUG
 		//shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
@@ -97,16 +97,16 @@ public class Hero {
 		stateTime += Gdx.graphics.getDeltaTime();		
 		batch.begin();
 		
-		if(heroDirection == "UP") {
+		if(heroDirection == 1) {
 			currentFrame = upAnimation.getKeyFrame(stateTime, true);
 		}
-		else if(heroDirection == "DOWN") {
+		else if(heroDirection == 2) {
 			currentFrame = downAnimation.getKeyFrame(stateTime, true);
 		}
-		else if(heroDirection == "RIGHT") {
+		else if(heroDirection == 3) {
 			currentFrame = rightAnimation.getKeyFrame(stateTime, true);
 		}
-		else if(heroDirection == "LEFT") {
+		else if(heroDirection == 4) {
 			currentFrame = leftAnimation.getKeyFrame(stateTime, true);
 		}		
 		else {
@@ -117,13 +117,13 @@ public class Hero {
 		batch.end();
 	}
 	
-	public String heroMovement() {
+	public int heroMovement() {
 			
 		//KEY UP
 		if(Gdx.input.isKeyPressed(Keys.UP)) {
 			if(heroY < mapHeight - heroHeight) {
 				heroY+= SPEED;
-				direction = "UP";
+				direction = 1;
 			}
 		}
 		
@@ -131,7 +131,7 @@ public class Hero {
 		else if(Gdx.input.isKeyPressed(Keys.DOWN)) {
 			if(heroY > 0) {
 				heroY-= SPEED;
-				direction = "DOWN";
+				direction = 2;
 			}
 		}
 				
@@ -139,7 +139,7 @@ public class Hero {
 		else if(Gdx.input.isKeyPressed(Keys.RIGHT)) {
 			if(heroX < mapWidth - collisionWidth - 1) {
 				heroX+= SPEED;
-				direction = "RIGHT";
+				direction = 3;
 			}
 		}
 		
@@ -147,12 +147,12 @@ public class Hero {
 		else if(Gdx.input.isKeyPressed(Keys.LEFT)) {
 			if(heroX > 0) {
 				heroX-= SPEED;
-				direction = "LEFT";
+				direction = 4;
 			}
 		}
 		
 		else {
-			direction = "";
+			direction = 0;
 		}
 		
 		//MOVE
@@ -196,10 +196,37 @@ public class Hero {
 			}
 		}
 		
-		Rectangle enemyRect = enemy.getRectangle();
-		
+		Rectangle enemyRect = Enemy.getRectangle();
 		if(Intersector.overlaps(heroMove, enemyRect)) {
+			System.out.println("HIT");
 			collision = true;
+			
+			if(direction == 1) {
+				hero.y -= collisionHeight;
+			}
+			else if(direction == 2) {
+				hero.y += collisionHeight;
+			}
+			else if(direction == 3) {
+				hero.x -= collisionWidth;
+			}
+			else if(direction == 4) {
+				hero.x += collisionWidth;
+			}
+			else {
+				if(enemy.getEnemyDirection() == 1) {
+					hero.y += collisionHeight;
+				}
+				else if(enemy.getEnemyDirection() == 2) {
+					hero.y -= collisionHeight;
+				}
+				else if(enemy.getEnemyDirection() == 3) {
+					hero.x += collisionWidth;
+				}
+				else if(enemy.getEnemyDirection() == 4) {
+					hero.x -= collisionWidth;
+				}
+			}
 		}
 		
 		return collision;
