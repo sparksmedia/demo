@@ -78,9 +78,11 @@ public class GameScreen extends ScreenAdapter {
 		hero.batch.setProjectionMatrix(camera.projection);
 		hero.batch.setTransformMatrix(camera.view);
 		
-		hero.render();	
+		hero.render();
 		
 		orthogonalTiledMapRenderer.render(foregroundLayers);
+		
+		hero.HPBar();
 	}
 	
 	public void cameraMovement() {

@@ -21,14 +21,23 @@ public class Hero {
 	private static final int heroWidth = 64;
 	private static final int heroHeight = 64;
 	
+	private static boolean heroAlive = true;
+	private static int heroHP = 100;
+	private static int heroAtk = 10;
+	private static long heroAtkTime;
+	private static int dieTime = 0;
+	
 	private static final int collisionWidth = 32;
 	private static final int collisionHeight = 32;
 	
-	private static final double SPEED = 3.5;
+	private static final double SPEED = 3;
 	
 	public ShapeRenderer shapeRenderer;
+	public ShapeRenderer healthBar;
 	private Rectangle hero;
 	private Rectangle heroMove;
+	private int heroDirection = 0;
+	private boolean heroMoving = false;
 	
 	private int heroX = Gdx.graphics.getWidth() / 2;
 	private int heroY = Gdx.graphics.getHeight() / 2;
@@ -56,7 +65,11 @@ public class Hero {
 	
 	private Texture weapon;
 	private TextureRegion[][] weaponRegion;
-	private TextureRegion weaponFrame;		
+	private TextureRegion weaponFrame;
+	
+	private Texture die;
+	private TextureRegion[][] dieRegion;
+	private TextureRegion dieFrame;
 	
 	private final int COLS = 9;
 	private final int ROWS = 4;
@@ -70,6 +83,8 @@ public class Hero {
 	private Animation weaponDownAnimation;
 	private Animation weaponRightAnimation;
 	private Animation weaponLeftAnimation;
+	
+	private Animation dieAnimation;
 	
 	public SpriteBatch batch;	
 	private float stateTime;
@@ -86,9 +101,11 @@ public class Hero {
 		heroWeapon = new Rectangle();	
 		heroAttack = false;
 		heroWeaponTime = System.currentTimeMillis();
+		heroAtkTime = System.currentTimeMillis();
 		
 		collisionRect = new Array<Rectangle>();		
 		shapeRenderer = new ShapeRenderer();
+		healthBar = new ShapeRenderer();
 		
 		texture = new Texture(Gdx.files.internal("hero.png"));		
 		textureRegion = TextureRegion.split(texture, texture.getWidth() / COLS, texture.getHeight() / ROWS);
@@ -97,6 +114,9 @@ public class Hero {
 		weapon = new Texture(Gdx.files.internal("weapon-spear.png"));
 		weaponRegion = TextureRegion.split(weapon, weapon.getWidth() / 8, weapon.getHeight() / ROWS);
 		weaponFrame = weaponRegion[2][4];
+		
+		die = new Texture(Gdx.files.internal("hero-die.png"));
+		dieRegion = TextureRegion.split(die, die.getWidth() / 6, die.getHeight());
 				
         upAnimation = new Animation(0.075f, textureRegion[0]);
         downAnimation = new Animation(0.075f, textureRegion[2]);
@@ -107,6 +127,8 @@ public class Hero {
 		weaponDownAnimation = new Animation(0.075f, weaponRegion[2]);
 		weaponRightAnimation = new Animation(0.075f, weaponRegion[3]);
 		weaponLeftAnimation = new Animation(0.075f, weaponRegion[1]);
+		
+		dieAnimation = new Animation(0.075f, dieRegion[0]);
 		
 		batch = new SpriteBatch();
 		stateTime = 0f;
@@ -123,7 +145,10 @@ public class Hero {
 	}
 	
 	public void render() {
-		int heroDirection = heroMovement();
+		
+		if(heroAlive == true) {
+			heroDirection = heroMovement();
+		}
 		
 		//DEBUG
 		//shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
@@ -134,23 +159,50 @@ public class Hero {
 		batch.begin();
 		
 		if(heroDirection == 1) {
-			currentFrame = upAnimation.getKeyFrame(stateTime, true);
+			if(heroMoving == true) {
+				currentFrame = upAnimation.getKeyFrame(stateTime, true);
+			}
+			else {
+				currentFrame = textureRegion[0][0];
+			}
+			
 			weaponFrame = weaponUpAnimation.getKeyFrame(stateTime, true);
 		}
 		else if(heroDirection == 2) {
-			currentFrame = downAnimation.getKeyFrame(stateTime, true);
+			if(heroMoving == true) {
+				currentFrame = downAnimation.getKeyFrame(stateTime, true);
+			}
+			else {
+				currentFrame = textureRegion[2][0];
+			}
+			
 			weaponFrame = weaponDownAnimation.getKeyFrame(stateTime, true);
 		}
 		else if(heroDirection == 3) {
-			currentFrame = rightAnimation.getKeyFrame(stateTime, true);
+			if(heroMoving == true) {
+				currentFrame = rightAnimation.getKeyFrame(stateTime, true);
+			}
+			else {
+				currentFrame = textureRegion[3][0];
+			}
+			
 			weaponFrame = weaponRightAnimation.getKeyFrame(stateTime, true);
 		}
 		else if(heroDirection == 4) {
-			currentFrame = leftAnimation.getKeyFrame(stateTime, true);
+			if(heroMoving == true) {
+				currentFrame = leftAnimation.getKeyFrame(stateTime, true);
+			}
+			else {
+				currentFrame = textureRegion[1][0];
+			}
+			
 			weaponFrame = weaponLeftAnimation.getKeyFrame(stateTime, true);
 		}
-					
-		if(System.currentTimeMillis() - heroHitTime > 2000) {
+		else if(heroDirection == 0) {
+			dieFrame = dieAnimation.getKeyFrame(stateTime, true);
+		}
+							
+		if(System.currentTimeMillis() - heroHitTime > 1000) {
 			heroHitColor = Color.WHITE;
 		}
 				
@@ -164,17 +216,29 @@ public class Hero {
 		if(heroAttack == true) {
 			batch.draw(weaponFrame, hero.x - (collisionWidth / 2), hero.y, heroWidth, heroHeight);
 		}
+		else if(heroAlive == false) {
+			
+			if(dieTime == 12) {
+				dieFrame = dieRegion[0][5];
+			}
+			else {
+				dieTime++;
+			}
+			
+			batch.draw(dieFrame, hero.x - (collisionWidth / 2), hero.y, heroWidth, heroHeight);
+
+		}
 		else {
 			batch.draw(currentFrame, hero.x - (collisionWidth / 2), hero.y, heroWidth, heroHeight);
 		}
 		
 		batch.end();
-				
+						
 		//DEBUG
-		shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-		shapeRenderer.setColor(Color.BLACK);
-		shapeRenderer.rect(heroWeapon.x, heroWeapon.y, heroWeapon.width, heroWeapon.height);	
-		shapeRenderer.end();
+		//shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+		//shapeRenderer.setColor(Color.BLACK);
+		//shapeRenderer.rect(heroWeapon.x, heroWeapon.y, heroWeapon.width, heroWeapon.height);	
+		//shapeRenderer.end();
 	}
 	
 	public int heroMovement() {
@@ -183,6 +247,7 @@ public class Hero {
 			if(heroY < mapHeight - heroHeight) {
 				heroY+= SPEED;
 				direction = 1;
+				heroMoving = true;
 			}
 		}
 		
@@ -191,6 +256,7 @@ public class Hero {
 			if(heroY > 0) {
 				heroY-= SPEED;
 				direction = 2;
+				heroMoving = true;
 			}
 		}
 				
@@ -199,6 +265,7 @@ public class Hero {
 			if(heroX < mapWidth - collisionWidth - 1) {
 				heroX+= SPEED;
 				direction = 3;
+				heroMoving = true;
 			}
 		}
 		
@@ -207,6 +274,7 @@ public class Hero {
 			if(heroX > 0) {
 				heroX-= SPEED;
 				direction = 4;
+				heroMoving = true;
 			}
 		}
 		
@@ -214,11 +282,14 @@ public class Hero {
 		if(Gdx.input.isKeyPressed(Keys.SPACE)) {
 			heroWeaponTime = System.currentTimeMillis();
 			heroAttack = true;
+			heroMoving = false;
 		}
 		
 		//NO KEY
-		if(Gdx.input.isKeyPressed(Keys.ANY_KEY)) {
+		if(!Gdx.input.isKeyPressed(Keys.ANY_KEY)) {
+			heroMoving = false;
 		}
+		
 		
 		//MOVE
 		heroMove.x = heroX;
@@ -288,8 +359,10 @@ public class Hero {
 		}
 		
 		Rectangle enemyRect = Enemy.getRectangle();
-		if(Intersector.overlaps(heroMove, enemyRect)) {
+		if(Intersector.overlaps(heroMove, enemyRect) && Enemy.enemyAlive) {
 			collision = true;
+			
+			hitHero(Enemy.enemyAtk);
 			
 			heroHitColor = Color.RED;
 			heroHitTime = TimeUtils.millis();
@@ -321,12 +394,44 @@ public class Hero {
 				}
 			}
 		}
-		
-		if(Intersector.overlaps(heroWeapon, enemyRect)) {
-			System.out.println("HIT");
+		if(System.currentTimeMillis() - heroAtkTime > 800) {
+			
+			if(Intersector.overlaps(heroWeapon, enemyRect) && Enemy.enemyAlive) {
+				heroAtkTime = System.currentTimeMillis();	
+				Enemy.hitEnemy(heroAtk);
+			}
+			
 		}
 		
 		return collision;
+		
+	}
+	
+	public void hitHero(int value) {
+		heroHP -= value;
+		
+		if(heroHP <= 0) {
+			heroAlive = false;
+			direction = 0;
+		}
+	}
+	
+	public void HPBar() {
+		
+		//BAR
+		healthBar.begin(ShapeRenderer.ShapeType.Filled);
+		healthBar.setColor(Color.WHITE);
+		healthBar.rect(Gdx.graphics.getWidth() - 211, Gdx.graphics.getHeight() - 31, 202, 22);
+		
+		if(heroHP <= 30) {
+			healthBar.setColor(Color.RED);
+		}
+		else {
+			healthBar.setColor(Color.GREEN);
+		}
+		
+		healthBar.rect(Gdx.graphics.getWidth() - 210, Gdx.graphics.getHeight() - 30, heroHP * 2, 20);		
+		healthBar.end();
 		
 	}
 	
