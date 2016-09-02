@@ -67,8 +67,10 @@ public class GameScreen extends ScreenAdapter {
 		
 		enemy.shapeRenderer.setProjectionMatrix(camera.projection);
 		enemy.shapeRenderer.setTransformMatrix(camera.view);
+		enemy.enemyHPBar.setProjectionMatrix(camera.projection);
+		enemy.enemyHPBar.setTransformMatrix(camera.view);
 		enemy.batch.setProjectionMatrix(camera.projection);
-		enemy.batch.setTransformMatrix(camera.view);
+		enemy.batch.setTransformMatrix(camera.view);	
 		
 		enemy.render();
 		

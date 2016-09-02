@@ -6,7 +6,6 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -16,29 +15,32 @@ public class Enemy {
 	
 	private static final int enemyWidth = 64;
 	private static final int enemyHeight = 64;
+	private static final double SPEED = 1;
 	
-	public static boolean enemyAlive = true;
+	private static boolean enemyAlive = true;
 	private static int enemyHP = 100;
-	public static int enemyAtk = 10;
-	public static int heroAtk;
+	private static int enemyAtk = 10;
 	
-	public static int dieTime = 0;	
+	private static int direction = 1;	
 	
+	private static int heroAtk;
+	private int enemyX = Gdx.graphics.getWidth() / 2 + 200;
+	private int enemyY = Gdx.graphics.getHeight() / 2;
+		
 	private static final int collisionWidth = 32;
 	private static final int collisionHeight = 48;
 	
-	private static final double SPEED = 1;
-	private static int direction = 1;
-	
 	public ShapeRenderer shapeRenderer;
+	public ShapeRenderer enemyHPBar;
 	private static Rectangle enemy;
-	private static Rectangle enemyRange;
+	private static Rectangle enemyRange;	
 	
-	private int enemyX = Gdx.graphics.getWidth() / 2 + 200;
-	private int enemyY = Gdx.graphics.getHeight() / 2;
+	private static Color enemyHitColor;
+	private static long enemyHitTime;
 	
 	private int COLS = 9;
 	private int ROWS = 4;
+	private static int dieTime = 0;
 	
 	private Texture texture;
 	private TextureRegion[][] textureRegion;
@@ -46,9 +48,6 @@ public class Enemy {
 	
 	private Texture die;
 	private TextureRegion[][] dieRegion;
-	
-	private static Color enemyHitColor;
-	private static long enemyHitTime;
 	
 	private Animation upAnimation;
 	private Animation downAnimation;
@@ -58,15 +57,19 @@ public class Enemy {
 	private Animation dieAnimation;
 	
 	public SpriteBatch batch;
-	private BitmapFont font;
+	
 	private float stateTime;
 	private static int randomNum;
 	
 	public Enemy() {
 		shapeRenderer = new ShapeRenderer();
+		enemyHPBar = new ShapeRenderer();
+		
 		enemy = new Rectangle(enemyX, enemyY, collisionWidth, collisionHeight);
 		enemyRange = new Rectangle(enemyX - collisionWidth, enemyY - collisionHeight, collisionWidth * 7, collisionHeight * 7);
+		
 		enemyHitColor = Color.WHITE;
+		enemyHitTime = System.currentTimeMillis();
 		
 		texture = new Texture(Gdx.files.internal("enemy.png"));		
 		textureRegion = TextureRegion.split(texture, texture.getWidth() / COLS, texture.getHeight() / ROWS);
@@ -81,57 +84,64 @@ public class Enemy {
         
         dieAnimation = new Animation(0.075f, dieRegion[0]);
         
-		batch = new SpriteBatch();
-		font = new BitmapFont();
-		
-		stateTime = 0f;
-		enemyHitTime = System.currentTimeMillis();
+		batch = new SpriteBatch();		
+		stateTime = 0f;		
 	}
 	
-	public void render() {			
-		//DEBUG
-		//shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-		//shapeRenderer.rect(enemy.x, enemy.y, enemy.width, enemy.height);
-		//shapeRenderer.end();		
-		//shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-		//shapeRenderer.rect(enemyRange.x, enemyRange.y, enemyRange.width, enemyRange.height);
-		//shapeRenderer.end();
+	public void render() {
 		
 		stateTime += Gdx.graphics.getDeltaTime();
+		batch.begin();
+		
+		if(enemyAlive == true) {
+			enemyMovement();
+		}
+		
+		enemyAnimation();
+				
+		batch.setColor(enemyHitColor);
+		batch.draw(currentFrame, enemy.x - (collisionWidth / 2), enemy.y, enemyWidth, enemyHeight);
+		batch.end();
+		
+		enemyHPBar();
+		
+		//debug();
+			
+	}
+	
+	public void enemyAnimation() {
 		
 		if(System.currentTimeMillis() - enemyHitTime > 1000) {
 			enemyHitColor = Color.WHITE;
 		}
-		
-		if(enemyAlive == true) {
-			enemyMovement();
-		}		
-		
-		
-		
-		if(enemyHP <= 0) {
-			currentFrame = dieAnimation.getKeyFrame(stateTime, true);
 			
+		if(direction == 1) {
+			currentFrame = upAnimation.getKeyFrame(stateTime, true);
+			enemy.y += SPEED;
+		}
+		else if(direction == 2) {
+			currentFrame = downAnimation.getKeyFrame(stateTime, true);	
+			enemy.y -= SPEED;
+		}
+		else if(direction == 3) {
+			currentFrame = rightAnimation.getKeyFrame(stateTime, true);
+			enemy.x += SPEED;
+		}
+		else if(direction == 4) {
+			currentFrame = leftAnimation.getKeyFrame(stateTime, true);
+			enemy.x -= SPEED;
+		}
+		else if(direction == 0) {
 			if(dieTime == 12) {
 				currentFrame = dieRegion[0][5];
 			}
 			else {
+				currentFrame = dieAnimation.getKeyFrame(stateTime, true);
 				dieTime++;
 			}
 		}
-			
-		batch.begin();		
-		
-		if(enemyHitColor == Color.RED){
-			font.draw(batch, ""+heroAtk+"", enemy.x + (collisionWidth / 2), enemy.y + enemyHeight);
-			
-		}
-		
-		batch.setColor(enemyHitColor);
-		batch.draw(currentFrame, enemy.x - (collisionWidth / 2), enemy.y, enemyWidth, enemyHeight);
-		batch.end();
-			
 	}
+	
 	
 	public void enemyMovement() {
 		
@@ -155,26 +165,7 @@ public class Enemy {
 			enemy.x += 1;
 			enemyRange();
 		}
-		
-		if(direction == 0) {
-			currentFrame = textureRegion[2][0];
-		}		
-		if(direction == 1) {
-			currentFrame = upAnimation.getKeyFrame(stateTime, true);
-			enemy.y += SPEED;
-		}
-		else if(direction == 2) {
-			currentFrame = downAnimation.getKeyFrame(stateTime, true);	
-			enemy.y -= SPEED;
-		}
-		else if(direction == 3) {
-			currentFrame = rightAnimation.getKeyFrame(stateTime, true);
-			enemy.x += SPEED;
-		}
-		else if(direction == 4) {
-			currentFrame = leftAnimation.getKeyFrame(stateTime, true);
-			enemy.x -= SPEED;
-		}
+
 	}
 	
 	public void enemyRange() {
@@ -200,6 +191,14 @@ public class Enemy {
 		return enemy;
 	}
 	
+	public static boolean getStatus() {
+		return enemyAlive;
+	}
+	
+	public int getAtk() {
+		return enemyAtk;
+	}
+	
 	public static void hitEnemy(int value) {
 		
 		heroAtk = value;
@@ -209,7 +208,39 @@ public class Enemy {
 		
 		if(enemyHP <= 0) {
 			enemyAlive = false;
+			direction = 0;
 		}
+	}
+	
+	public void enemyHPBar() {		
+				
+		if(enemyHitColor == Color.RED){
+			float enemyLifeLeft = (float)enemyHP / (float)100;
+			
+			enemyHPBar.begin(ShapeRenderer.ShapeType.Filled);
+			enemyHPBar.setColor(Color.WHITE);
+			enemyHPBar.rect(enemy.x, enemy.y + enemy.height + 5, enemy.width, 5);			
+
+			if(enemyHP <= 30) {
+				enemyHPBar.setColor(Color.RED);
+			}
+			else {
+				enemyHPBar.setColor(Color.GREEN);
+			}
+			
+			enemyHPBar.rect(enemy.x + 1, enemy.y + enemy.height + 6, enemy.width * enemyLifeLeft, 3);		
+			enemyHPBar.end();
+		}
+		
+	}
+	
+	public void debug() {
+		shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+		shapeRenderer.rect(enemy.x, enemy.y, enemy.width, enemy.height);
+		shapeRenderer.end();		
+		shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+		shapeRenderer.rect(enemyRange.x, enemyRange.y, enemyRange.width, enemyRange.height);
+		shapeRenderer.end();
 	}
 
 }
