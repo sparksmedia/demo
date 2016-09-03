@@ -5,19 +5,13 @@ import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.maps.MapProperties;
-import com.badlogic.gdx.maps.tiled.TiledMap;
-import com.badlogic.gdx.maps.tiled.TmxMapLoader;
-import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 
 public class GameScreen extends ScreenAdapter {
 	
+	private Map map;
 	private Hero hero;
 	private Enemy enemy;
 	private OrthographicCamera camera;
-	
-	private TiledMap tiledMap;
-	private OrthogonalTiledMapRenderer orthogonalTiledMapRenderer;
 	
 	private static final int WORLD_WIDTH = 800;
 	private static final int WORLD_HEIGHT = 480;
@@ -26,9 +20,10 @@ public class GameScreen extends ScreenAdapter {
 		
 	private int cameraX = WORLD_WIDTH / 2;
 	private int cameraY = WORLD_HEIGHT / 2;
+	
 	private int mapWidth;
 	private int mapHeight;
-	
+		
 	public GameScreen(Demo demo) {
 	}
 	
@@ -39,17 +34,15 @@ public class GameScreen extends ScreenAdapter {
 		camera.position.set(WORLD_WIDTH / 2 - WORLD_WIDTH, WORLD_HEIGHT / 2, 0);
 		camera.update();
 		
-		tiledMap = new TmxMapLoader().load("map.tmx");
-		orthogonalTiledMapRenderer = new OrthogonalTiledMapRenderer(tiledMap);
-		
-		MapProperties prop = tiledMap.getProperties();
-		mapWidth = BLOCK * prop.get("width", Integer.class);
-		mapHeight = BLOCK * prop.get("height", Integer.class);
+		map = new Map();
+		mapWidth = map.getMapWidth();
+		mapHeight = map.getMapHeight();
 		
 		hero = new Hero();
-		hero.worldMap(mapWidth, mapHeight, tiledMap);
-		
+		hero.getMap(mapWidth, mapHeight, map.mapObjects());
+
 		enemy = new Enemy();
+		enemy.getMap(mapWidth, mapHeight, map.mapObjects());
 	}
 
 	@Override
@@ -62,27 +55,24 @@ public class GameScreen extends ScreenAdapter {
 		int[] backgroundLayers = { 0, 1 };
 		int[] foregroundLayers = { 2 };
 		
-		orthogonalTiledMapRenderer.setView(camera);
-		orthogonalTiledMapRenderer.render(backgroundLayers);
+		map.getMapRenderer().setView(camera);
+		map.getMapRenderer().render(backgroundLayers);
 		
 		enemy.shapeRenderer.setProjectionMatrix(camera.projection);
 		enemy.shapeRenderer.setTransformMatrix(camera.view);
 		enemy.enemyHPBar.setProjectionMatrix(camera.projection);
 		enemy.enemyHPBar.setTransformMatrix(camera.view);
 		enemy.batch.setProjectionMatrix(camera.projection);
-		enemy.batch.setTransformMatrix(camera.view);	
-		
+		enemy.batch.setTransformMatrix(camera.view);			
 		enemy.render();
-		
-		hero.shapeRenderer.setProjectionMatrix(camera.projection);
-		hero.shapeRenderer.setTransformMatrix(camera.view);
 				
+		hero.shapeRenderer.setProjectionMatrix(camera.projection);
+		hero.shapeRenderer.setTransformMatrix(camera.view);	
 		hero.batch.setProjectionMatrix(camera.projection);
-		hero.batch.setTransformMatrix(camera.view);
-		
+		hero.batch.setTransformMatrix(camera.view);		
 		hero.render();
 		
-		orthogonalTiledMapRenderer.render(foregroundLayers);
+		map.getMapRenderer().render(foregroundLayers);
 		
 		hero.HPBar();
 	}

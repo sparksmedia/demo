@@ -9,23 +9,26 @@ import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.Circle;
+import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.utils.Array;
 
 public class Enemy {
 	
 	private static final int enemyWidth = 64;
 	private static final int enemyHeight = 64;
-	private static final double SPEED = 1;
+	private static double speed = 1;
 	
 	private static boolean enemyAlive = true;
 	private static int enemyHP = 100;
 	private static int enemyAtk = 10;
 	
-	private static int direction = 1;	
+	private static int direction = 3;	
 	
 	private static int heroAtk;
 	private int enemyX = Gdx.graphics.getWidth() / 2 + 200;
-	private int enemyY = Gdx.graphics.getHeight() / 2;
+	private int enemyY = Gdx.graphics.getHeight() / 2 + 200;
 		
 	private static final int collisionWidth = 32;
 	private static final int collisionHeight = 48;
@@ -33,13 +36,13 @@ public class Enemy {
 	public ShapeRenderer shapeRenderer;
 	public ShapeRenderer enemyHPBar;
 	private static Rectangle enemy;
-	private static Rectangle enemyRange;	
+	
+	private static Circle enemyArea;
+	private int enemyAreaWidth = 200;
 	
 	private static Color enemyHitColor;
 	private static long enemyHitTime;
 	
-	private int COLS = 9;
-	private int ROWS = 4;
 	private static int dieTime = 0;
 	
 	private Texture texture;
@@ -61,18 +64,23 @@ public class Enemy {
 	private float stateTime;
 	private static int randomNum;
 	
+	private int countObjects;
+	private int mapWidth;
+	private int mapHeight;
+	private Array<Rectangle> collisionRect;
+	
 	public Enemy() {
 		shapeRenderer = new ShapeRenderer();
 		enemyHPBar = new ShapeRenderer();
 		
 		enemy = new Rectangle(enemyX, enemyY, collisionWidth, collisionHeight);
-		enemyRange = new Rectangle(enemyX - collisionWidth, enemyY - collisionHeight, collisionWidth * 7, collisionHeight * 7);
+		enemyArea = new Circle(enemy.x + (enemy.width / 2), enemy.y + (enemy.height / 2), enemyAreaWidth);
 		
 		enemyHitColor = Color.WHITE;
 		enemyHitTime = System.currentTimeMillis();
 		
 		texture = new Texture(Gdx.files.internal("enemy.png"));		
-		textureRegion = TextureRegion.split(texture, texture.getWidth() / COLS, texture.getHeight() / ROWS);
+		textureRegion = TextureRegion.split(texture, texture.getWidth() / 9, texture.getHeight() / 4);
 		
 		die = new Texture(Gdx.files.internal("enemy-die.png"));
 		dieRegion = TextureRegion.split(die, die.getWidth() / 6, die.getHeight());
@@ -86,6 +94,8 @@ public class Enemy {
         
 		batch = new SpriteBatch();		
 		stateTime = 0f;		
+		
+		System.out.println("ENEMY");
 	}
 	
 	public void render() {
@@ -95,6 +105,7 @@ public class Enemy {
 		
 		if(enemyAlive == true) {
 			enemyMovement();
+			enemyAttackArea();
 		}
 		
 		enemyAnimation();
@@ -105,8 +116,7 @@ public class Enemy {
 		
 		enemyHPBar();
 		
-		//debug();
-			
+		debug();			
 	}
 	
 	public void enemyAnimation() {
@@ -117,19 +127,19 @@ public class Enemy {
 			
 		if(direction == 1) {
 			currentFrame = upAnimation.getKeyFrame(stateTime, true);
-			enemy.y += SPEED;
+			enemy.y += speed;
 		}
 		else if(direction == 2) {
 			currentFrame = downAnimation.getKeyFrame(stateTime, true);	
-			enemy.y -= SPEED;
+			enemy.y -= speed;
 		}
 		else if(direction == 3) {
 			currentFrame = rightAnimation.getKeyFrame(stateTime, true);
-			enemy.x += SPEED;
+			enemy.x += speed;
 		}
 		else if(direction == 4) {
 			currentFrame = leftAnimation.getKeyFrame(stateTime, true);
-			enemy.x -= SPEED;
+			enemy.x -= speed;
 		}
 		else if(direction == 0) {
 			if(dieTime == 12) {
@@ -142,39 +152,92 @@ public class Enemy {
 		}
 	}
 	
-	
 	public void enemyMovement() {
+		boolean collision = false;
 		
-		//UP
-		if(enemy.y >= enemyRange.y + enemyRange.height - enemy.height) {
-			enemy.y -= 1;
-			enemyRange();
+		countObjects = collisionRect.size;
+
+		for (int i=0; i < countObjects; i++) {		
+			if(Intersector.overlaps(enemy, collisionRect.get(i))) {
+				collision = true;
+			}
 		}
-		//DOWN
-		if(enemy.y <= enemyRange.y) {
-			enemy.y += 1;
-			enemyRange();
+				
+		if(	enemy.y >= mapHeight - collisionHeight || 
+			enemy.y <= 0 || 
+			enemy.x >= mapWidth - 
+			enemyWidth || enemy.x <= 0) {
+			
+			collision = true;
 		}
-		//RIGHT
-		if(enemy.x >= enemyRange.x + enemyRange.width - enemy.width) {
-			enemy.x -= 1;
-			enemyRange();
-		}
-		//LEFT
-		if(enemy.x <= enemyRange.x) {
-			enemy.x += 1;
-			enemyRange();
+		
+		if(collision == true) {
+			enemyCollision();
 		}
 
 	}
 	
-	public void enemyRange() {
+	public Circle enemyAttackArea() {
+		enemyArea.x = enemy.x + (enemy.width / 2);
+		enemyArea.y = enemy.y + (enemy.height / 2);
+		
+		return enemyArea;
+	}
+	
+	public void enemyAttack(float heroX, float heroY, boolean active) {
+	
+		if(active == true) {
+			speed = 2;
+			
+			if(enemy.y < heroY) {
+				direction = 1;
+				enemy.y += speed - 1;
+			}
+			else if(enemy.x < heroX) {
+				direction =  3;
+			}
+			else if(enemy.y > heroY) {
+				direction = 2;
+			}
+			else if(enemy.x > heroX) {
+				direction = 4;
+			}
+			
+		}
+		else {
+			speed = 1;
+		}
+	}
+
+	
+	public void enemyCollision() {
+		
+		if(direction == 1) {
+			enemy.y -= 1;
+		}
+		else if(direction == 2) {
+			enemy.y += 1;
+		}
+		else if(direction == 3) {
+			enemy.x -= 1;
+		}
+		else if(direction == 4) {
+			enemy.x += 1;
+		}
+		
 		int prevDirection = direction;
 		int newDirection = randomNum(1, 4);
 		
 		if(prevDirection != newDirection) {
 			direction = newDirection;
 		}
+	}
+	
+	public void getMap(int mapWidth, int mapHeight, Array<Rectangle> collisionRect) {
+		this.mapWidth = mapWidth;
+		this.mapHeight = mapHeight;
+		this.collisionRect = collisionRect;
+		
 	}
 	
 	public static int randomNum(int min, int max) {
@@ -235,11 +298,9 @@ public class Enemy {
 	}
 	
 	public void debug() {
-		shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-		shapeRenderer.rect(enemy.x, enemy.y, enemy.width, enemy.height);
-		shapeRenderer.end();		
 		shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-		shapeRenderer.rect(enemyRange.x, enemyRange.y, enemyRange.width, enemyRange.height);
+		shapeRenderer.setColor(Color.RED);
+		shapeRenderer.circle(enemyArea.x, enemyArea.y, enemyArea.radius);
 		shapeRenderer.end();
 	}
 

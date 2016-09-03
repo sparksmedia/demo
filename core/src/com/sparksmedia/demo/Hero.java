@@ -8,9 +8,7 @@ import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.maps.MapObjects;
-import com.badlogic.gdx.maps.objects.RectangleMapObject;
-import com.badlogic.gdx.maps.tiled.TiledMap;
+import com.badlogic.gdx.math.Circle;
 import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Array;
@@ -39,6 +37,9 @@ public class Hero {
 	private Rectangle hero;
 	private Rectangle heroMove;		
 	
+	private Circle heroArea;
+	private int heroAreaWidth = 100;
+	
 	private Color heroHitColor;
 	private long heroHitTime;
 	private static long heroAtkTime;
@@ -53,7 +54,6 @@ public class Hero {
 	private int mapWidth;
 	private int mapHeight;
 	
-	private TiledMap tiledMap;	
 	private int countObjects;
 	private Array<Rectangle> collisionRect;
 	
@@ -66,9 +66,6 @@ public class Hero {
 	
 	private Texture die;
 	private TextureRegion[][] dieRegion;
-	
-	private final int COLS = 9;
-	private final int ROWS = 4;
 	
 	private Animation upAnimation;
 	private Animation downAnimation;
@@ -84,12 +81,13 @@ public class Hero {
 	
 	public SpriteBatch batch;	
 	private float stateTime;
-	
+
 	private Enemy enemy;
-	
+
 	public Hero() {
 		hero = new Rectangle(heroX, heroY, collisionWidth, collisionHeight);
 		heroMove = new Rectangle(heroX, heroY, collisionWidth, collisionHeight);
+		heroArea = new Circle(hero.x + (hero.width / 2), hero.y + (hero.height / 2), heroAreaWidth);
 			
 		heroHitColor = Color.WHITE;
 		heroHitTime = System.currentTimeMillis();
@@ -104,10 +102,10 @@ public class Hero {
 		healthBar = new ShapeRenderer();
 		
 		texture = new Texture(Gdx.files.internal("hero.png"));		
-		textureRegion = TextureRegion.split(texture, texture.getWidth() / COLS, texture.getHeight() / ROWS);
+		textureRegion = TextureRegion.split(texture, texture.getWidth() / 9, texture.getHeight() / 4);
 		
 		weapon = new Texture(Gdx.files.internal("weapon-spear.png"));
-		weaponRegion = TextureRegion.split(weapon, weapon.getWidth() / 8, weapon.getHeight() / ROWS);
+		weaponRegion = TextureRegion.split(weapon, weapon.getWidth() / 8, weapon.getHeight() / 4);
 		
 		die = new Texture(Gdx.files.internal("hero-die.png"));
 		dieRegion = TextureRegion.split(die, die.getWidth() / 6, die.getHeight());
@@ -126,16 +124,15 @@ public class Hero {
 		
 		batch = new SpriteBatch();
 		stateTime = 0f;
-		
+
 		enemy = new Enemy();
+		System.out.println("HERO");
 	}
-		
-	public void worldMap(int mapWidth, int mapHeight, TiledMap tiledMap) {		
+
+	public void getMap(int mapWidth, int mapHeight, Array<Rectangle> collisionRect) {
 		this.mapWidth = mapWidth;
-		this.mapHeight = mapHeight;
-		this.tiledMap = tiledMap;
-		
-		mapObjects();
+		this.mapHeight =  mapHeight;
+		this.collisionRect = collisionRect;		
 	}
 	
 	public void render() {
@@ -154,10 +151,11 @@ public class Hero {
 		batch.draw(currentFrame, hero.x - (collisionWidth / 2), hero.y, heroWidth, heroHeight);		
 		batch.end();
 		
-		//renderDebug();
+		renderDebug();
 	}
 	
 	public void heroAnimation() {
+		
 		if(direction == 1) {
 			if(heroAttack == true) {
 				currentFrame = weaponUpAnimation.getKeyFrame(stateTime, true);
@@ -210,6 +208,10 @@ public class Hero {
 				currentFrame = dieAnimation.getKeyFrame(stateTime, true);
 				dieTime++;				
 			}
+		}
+		
+		if(System.currentTimeMillis() - heroHitTime > 1000) {
+			heroHitColor = Color.WHITE;
 		}
 	}
 	
@@ -312,27 +314,14 @@ public class Hero {
 			heroAttack = false;
 		}
 	}
-		
-	public void mapObjects() {
-		MapObjects collisionObjects = tiledMap.getLayers().get("objects").getObjects();
-		countObjects = collisionObjects.getCount();
-		
-		for (int i=0; i < countObjects; i++) {
-			RectangleMapObject obj = (RectangleMapObject) collisionObjects.get(i);			
-			Rectangle rect = obj.getRectangle();
-			collisionRect.add(new Rectangle(rect.x, rect.y, rect.width, rect.height));
-		}
-	}
 	
 	public boolean checkCollision() {
 		
 		boolean collision = false;
-		
-		if(System.currentTimeMillis() - heroHitTime > 1000) {
-			heroHitColor = Color.WHITE;
-		}
-		
+				
 		//OBJECTS
+		countObjects = collisionRect.size;
+
 		for (int i=0; i < countObjects; i++) {		
 			if(Intersector.overlaps(heroMove, collisionRect.get(i))) {
 				collision = true;
@@ -340,6 +329,8 @@ public class Hero {
 		}
 		
 		//ENEMY
+		heroAttackArea();
+		
 		Rectangle enemyRect = Enemy.getRectangle();
 		if(Intersector.overlaps(heroMove, enemyRect) && Enemy.getStatus()) {
 			collision = true;
@@ -349,17 +340,19 @@ public class Hero {
 			heroHitColor = Color.RED;
 			heroHitTime = TimeUtils.millis();
 			
-			if(direction == 1) {
-				hero.y -= collisionHeight * 2;
-			}
-			else if(direction == 2) {
-				hero.y += collisionHeight * 2;
-			}
-			else if(direction == 3) {
-				hero.x -= collisionWidth * 2;
-			}
-			else if(direction == 4) {
-				hero.x += collisionWidth * 2;
+			if(heroMoving == true) {
+				if(direction == 1) {
+					hero.y -= collisionHeight * 2;
+				}
+				else if(direction == 2) {
+					hero.y += collisionHeight * 2;
+				}
+				else if(direction == 3) {
+					hero.x -= collisionWidth * 2;
+				}
+				else if(direction == 4) {
+					hero.x += collisionWidth * 2;
+				}
 			}
 			else {
 				if(enemy.getEnemyDirection() == 1) {
@@ -369,10 +362,10 @@ public class Hero {
 					hero.y -= collisionHeight * 2;
 				}
 				else if(enemy.getEnemyDirection() == 3) {
-					hero.x += collisionWidth * 2;
+					hero.x -= collisionWidth * 2;
 				}
 				else if(enemy.getEnemyDirection() == 4) {
-					hero.x -= collisionWidth * 2;
+					hero.x += collisionWidth * 2;
 				}
 			}
 		}
@@ -388,6 +381,18 @@ public class Hero {
 		
 		return collision;
 		
+	}
+	
+	public void heroAttackArea() {
+		heroArea.x = hero.x + (hero.width / 2);
+		heroArea.y = hero.y + (hero.height / 2);
+		
+		if(Intersector.overlaps(heroArea, enemy.enemyAttackArea()) && Enemy.getStatus()) {
+			enemy.enemyAttack(hero.x, hero.y, true);
+		}
+		else {
+			enemy.enemyAttack(0, 0, false);
+		}
 	}
 	
 	public void hitHero(int value) {
@@ -425,15 +430,11 @@ public class Hero {
 		return heroY;
 	}
 	
-	public void renderDebug() {
-
-		shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-		shapeRenderer.rect(hero.x, hero.y, hero.width, hero.height);	
-		shapeRenderer.end();
-		
+	public void renderDebug() {		
 		shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-		shapeRenderer.setColor(Color.BLACK);
-		shapeRenderer.rect(heroWeapon.x, heroWeapon.y, heroWeapon.width, heroWeapon.height);	
+		shapeRenderer.setColor(Color.BLUE);
+		shapeRenderer.circle(heroArea.x, heroArea.y, heroArea.radius);	
 		shapeRenderer.end();
 	}
+
 }
